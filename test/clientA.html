@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Client A</h2>
+<textarea id="offer" placeholder="Offer SDP ici..." rows="10" cols="50"></textarea><br>
+<button onclick="createOffer()">Créer une offre</button><br>
+<textarea id="answer" placeholder="Coller réponse SDP ici..." rows="10" cols="50"></textarea><br>
+<button onclick="addAnswer()">Ajouter réponse</button>
+
+<script>
+let pc = new RTCPeerConnection({
+    iceServers: [
+        { urls: "stun:stun.l.google.com:19302" } // Serveur STUN public de Google
+    ]
+}); let channel = pc.createDataChannel("chat");
+
+channel.onopen = () => {
+    console.log("Can send messages now!");
+    channel.send("Bonjour de A!");
+};
+
+channel.onmessage = e => console.log("Reçu de B:", e.data);
+
+pc.onicecandidate = e => {
+    if (e.candidate === null) {
+        document.getElementById("offer").value = JSON.stringify(pc.localDescription);
+    }
+};
+
+async function createOffer() {
+    let offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+}
+
+async function addAnswer() {
+    let answer = JSON.parse(document.getElementById("answer").value);
+    await pc.setRemoteDescription(answer);
+}
+</script>
+</body>
+</html>

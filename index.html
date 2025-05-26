@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <link type="text/css" media="all" href="./style/index.css" rel="stylesheet">
+    <title>Jeu Multijoueur</title>
+</head>
+
+<body>
+    <h2>Bienvenue dans le Jeu Multijoueur</h2>
+
+    <button onclick="createGame()">Créer une partie</button>
+    <button onclick="joinGame()">Rejoindre une partie</button>
+
+    <script>
+        function createGame() {
+            window.location.href = 'clientA.html';
+        }
+
+        function joinGame() {
+            window.location.href = 'clientB.html';
+        }
+    </script>
+</body>
+
+</html>

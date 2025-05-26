@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <link type="text/css" media="all" href="./style/index.css" rel="stylesheet">
+    <title>Client A</title>
+</head>
+
+<body>
+    <h2>Client A</h2>
+
+    <label for="citySelect">Choisissez une ville :</label>
+    <select id="citySelect" onchange="loadMap(this.value)">
+        <option value="">-- Choisir une ville --</option>
+        <option value="colmar">Colmar</option>
+        <option value="mulhouse">Mulhouse</option>
+        <option value="zillisheim">Zillisheim</option>
+    </select>
+
+    <div id="mapContainer"></div>
+
+    <script>
+        let jsonStore = null;
+
+        function loadMap(city) {
+            if (city) {
+                const mapPath = `./maps/${city}.json`;
+                fetch(mapPath)
+                    .then(response => {
+                        if (!response.ok)
+                            throw new Error('Fichier introuvable');
+                        return response.text();
+                    })
+                    .then(json => {
+                        jsonStore = json;
+                        
+                    })
+                    .catch(err => {
+                        document.getElementById('mapContainer').innerHTML = `<p>Carte non disponible pour cette ville.</p>`;
+                    });
+            } else {
+                document.getElementById('mapContainer').innerHTML = '';
+            }
+        }
+
+        let pc = new RTCPeerConnection({
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" }
+            ]
+        }); let channel = pc.createDataChannel("chat");
+
+        channel.onopen = () => {
+            console.log("Can send messages now!");
+            channel.send("Hello from A!");
+        };
+
+        channel.onmessage = e => console.log("Recieve from B:", e.data);
+
+        pc.onicecandidate = e => {
+            if (e.candidate === null) {
+                console.log(JSON.stringify(pc.localDescription));
+            }
+        };
+
+        async function createOffer() {
+            let offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+        }
+    </script>
+</body>
+
+</html>
