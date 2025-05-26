@@ -93,7 +93,7 @@
                 qrCodeSuccessCallback
             ).catch(err => {
                 console.error("Erreur d'initialisation du scanner :", err);
-                alert("Impossible de démarrer le scanner.");
+                alert("Impossible de démarrer le scanner : " + err);
             });
         }
     </script>
