@@ -4,19 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <link type="text/css" media="all" href="./style/index.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <title>Client A</title>
 </head>
 
 <body>
     <h2>Client A</h2>
 
-    <label for="citySelect">Choisissez une ville :</label>
-    <select id="citySelect" onchange="loadMap(this.value)">
-        <option value="">-- Choisir une ville --</option>
-        <option value="colmar">Colmar</option>
-        <option value="mulhouse">Mulhouse</option>
-        <option value="zillisheim">Zillisheim</option>
-    </select>
+    <div id="connectionSection">
+        <button onclick="createOffer()">Créer l'offre et générer un QR Code</button>
+        <div id="qrcode"></div>
+
+        <button onclick="startScan()">Scanner un QR code</button>
+        <div id="reader" style="width:300px;"></div>
+    </div>
+
+    <div id="citySelection" style="display: none;">
+        <label for="citySelect">Choisissez une ville :</label>
+        <select id="citySelect" onchange="loadMap(this.value)">
+            <option value="">-- Choisir une ville --</option>
+            <option value="colmar">Colmar</option>
+            <option value="mulhouse">Mulhouse</option>
+            <option value="zillisheim">Zillisheim</option>
+        </select>
+    </div>
 
     <div id="mapContainer"></div>
 
@@ -28,13 +40,12 @@
                 const mapPath = `./maps/${city}.json`;
                 fetch(mapPath)
                     .then(response => {
-                        if (!response.ok)
-                            throw new Error('Fichier introuvable');
+                        if (!response.ok) throw new Error('Fichier introuvable');
                         return response.text();
                     })
                     .then(json => {
                         jsonStore = json;
-                        
+                        document.getElementById('mapContainer').innerHTML = `<pre>${json}</pre>`;
                     })
                     .catch(err => {
                         document.getElementById('mapContainer').innerHTML = `<p>Carte non disponible pour cette ville.</p>`;
@@ -45,28 +56,78 @@
         }
 
         let pc = new RTCPeerConnection({
-            iceServers: [
-                { urls: "stun:stun.l.google.com:19302" }
-            ]
-        }); let channel = pc.createDataChannel("chat");
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+
+        let channel = pc.createDataChannel("chat");
 
         channel.onopen = () => {
             console.log("Can send messages now!");
             channel.send("Hello from A!");
+            document.getElementById('citySelection').style.display = "block";
+            document.getElementById('connectionSection').style.display = "none";
         };
 
-        channel.onmessage = e => console.log("Recieve from B:", e.data);
+        channel.onmessage = e => console.log("Received from B:", e.data);
 
         pc.onicecandidate = e => {
             if (e.candidate === null) {
-                console.log(JSON.stringify(pc.localDescription));
+                new QRCode(document.getElementById("qrcode"), {
+                    text: JSON.stringify(pc.localDescription),
+                    width: 256,
+                    height: 256
+                });
             }
         };
 
         async function createOffer() {
-            let offer = await pc.createOffer();
+            const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
         }
+
+        async function receiveAnswer() {
+            const answerText = document.getElementById("answerInput").value;
+            if (!answerText) return alert("Veuillez coller l'Answer d'abord !");
+            try {
+                const answer = new RTCSessionDescription(JSON.parse(answerText));
+                await pc.setRemoteDescription(answer);
+                console.log("Answer reçue et appliquée !");
+            } catch (err) {
+                alert("Erreur lors de l'application de l'Answer !");
+                console.error(err);
+            }
+        }
+
+    async function startScan() {
+        const html5QrCode = new Html5Qrcode("reader");
+
+        const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+            console.log(`QR Code détecté: ${decodedText}`);
+            try {
+                const answer = new RTCSessionDescription(JSON.parse(decodedText));
+                await pc.setRemoteDescription(answer);
+                alert("Connexion établie via QR Code !");
+                html5QrCode.stop(); // Stop scanner après succès
+                document.getElementById("reader").innerHTML = "";
+                document.getElementById('citySelection').style.display = "block";
+                document.getElementById('connectionSection').style.display = "none";
+            } catch (err) {
+                alert("QR Code invalide !");
+                console.error(err);
+            }
+        };
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        html5QrCode.start(
+            { facingMode: "environment" }, // caméra arrière
+            config,
+            qrCodeSuccessCallback
+        ).catch(err => {
+            console.error("Erreur d'initialisation du scanner :", err);
+            alert("Impossible de démarrer le scanner.");
+        });
+    }
     </script>
 </body>
 
