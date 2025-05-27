@@ -73,6 +73,7 @@
                 console.log(`QR Code détecté: ${decodedText}`);
                 try {
                     const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
+                    alert(decompressed);
                     const answer = new RTCSessionDescription(JSON.parse(decompressed));
 
                     await pc.setRemoteDescription(answer);
