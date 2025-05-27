@@ -71,7 +71,7 @@
 
             const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
                 console.log(`QR Code détecté: ${decodedText}`);
-                try {
+                // try {
                     const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
                     alert(decompressed);
                     const answer = new RTCSessionDescription(JSON.parse(decompressed));
@@ -82,10 +82,10 @@
                     document.getElementById("reader").innerHTML = "";
                     document.getElementById('citySelection').style.display = "block";
                     document.getElementById('connectionSection').style.display = "none";
-                } catch (err) {
-                    alert("QR Code invalide !");
-                    console.error(err);
-                }
+                // } catch (err) {
+                //     alert("QR Code invalide !");
+                //     console.error(err);
+                // }
             };
 
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
