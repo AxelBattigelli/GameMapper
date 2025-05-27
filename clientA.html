@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <link type="text/css" media="all" href="./style/index.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <title>Client A</title>
 </head>
@@ -72,8 +73,16 @@
 
         pc.onicecandidate = e => {
             if (e.candidate === null) {
+                //     new QRCode(document.getElementById("qrcode"), {
+                //         text: JSON.stringify(pc.localDescription),
+                //         width: 256,
+                //         height: 256
+                //     });
+                const sdp = JSON.stringify(pc.localDescription);
+                const compressed = LZString.compressToEncodedURIComponent(sdp);
+
                 new QRCode(document.getElementById("qrcode"), {
-                    text: JSON.stringify(pc.localDescription),
+                    text: compressed,
                     width: 256,
                     height: 256
                 });
@@ -98,36 +107,38 @@
             }
         }
 
-    async function startScan() {
-        const html5QrCode = new Html5Qrcode("reader");
+        async function startScan() {
+            const html5QrCode = new Html5Qrcode("reader");
 
-        const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
-            console.log(`QR Code détecté: ${decodedText}`);
-            try {
-                const answer = new RTCSessionDescription(JSON.parse(decodedText));
-                await pc.setRemoteDescription(answer);
-                alert("Connexion établie via QR Code !");
-                html5QrCode.stop(); // Stop scanner après succès
-                document.getElementById("reader").innerHTML = "";
-                document.getElementById('citySelection').style.display = "block";
-                document.getElementById('connectionSection').style.display = "none";
-            } catch (err) {
-                alert("QR Code invalide !");
-                console.error(err);
-            }
-        };
+            const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+                console.log(`QR Code détecté: ${decodedText}`);
+                try {
+                    const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
+                    const answer = new RTCSessionDescription(JSON.parse(decompressed));
 
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                    await pc.setRemoteDescription(answer);
+                    alert("Connexion établie via QR Code !");
+                    html5QrCode.stop(); // Stop scanner après succès
+                    document.getElementById("reader").innerHTML = "";
+                    document.getElementById('citySelection').style.display = "block";
+                    document.getElementById('connectionSection').style.display = "none";
+                } catch (err) {
+                    alert("QR Code invalide !");
+                    console.error(err);
+                }
+            };
 
-        html5QrCode.start(
-            { facingMode: "environment" }, // caméra arrière
-            config,
-            qrCodeSuccessCallback
-        ).catch(err => {
-            console.error("Erreur d'initialisation du scanner :", err);
-            alert("Impossible de démarrer le scanner : " + err);
-        });
-    }
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // caméra arrière
+                config,
+                qrCodeSuccessCallback
+            ).catch(err => {
+                console.error("Erreur d'initialisation du scanner :", err);
+                alert("Impossible de démarrer le scanner : " + err);
+            });
+        }
     </script>
 </body>
 

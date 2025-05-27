@@ -72,7 +72,9 @@
             const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
                 console.log(`QR Code détecté: ${decodedText}`);
                 try {
-                    const answer = new RTCSessionDescription(JSON.parse(decodedText));
+                    const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
+                    const answer = new RTCSessionDescription(JSON.parse(decompressed));
+
                     await pc.setRemoteDescription(answer);
                     alert("Connexion établie via QR Code !");
                     html5QrCode.stop(); // Stop scanner après succès
