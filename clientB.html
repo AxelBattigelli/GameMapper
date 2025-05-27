@@ -21,6 +21,7 @@
     </div>
 
     <div id="mapContainer"></div>
+    <div id="logBox" style="background-color: #f9f9f9; border: 1px solid #ccc; padding: 10px; margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
 
     <script>
         let pc = new RTCPeerConnection({
@@ -66,12 +67,34 @@
             }
         }
 
+        function appendToLogBox(message, type = 'log') {
+            const logBox = document.getElementById('logBox');
+            const p = document.createElement('p');
+            p.textContent = `[${type.toUpperCase()}] ${message}`;
+            p.style.color = type === 'error' ? 'red' : 'black';
+            logBox.appendChild(p);
+            logBox.scrollTop = logBox.scrollHeight; // Auto-scroll
+        }
+
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+
+        console.log = function (message, ...optionalParams) {
+            originalConsoleLog(message, ...optionalParams);
+            appendToLogBox(message, 'log');
+        };
+
+        console.error = function (message, ...optionalParams) {
+            originalConsoleError(message, ...optionalParams);
+            appendToLogBox(message, 'error');
+        };
+
         async function startScan() {
             const html5QrCode = new Html5Qrcode("reader");
 
             const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
                 console.log(`QR Code détecté: ${decodedText}`);
-                // try {
+                try {
                     const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
                     alert(decompressed);
                     const answer = new RTCSessionDescription(JSON.parse(decompressed));
@@ -80,12 +103,11 @@
                     alert("Connexion établie via QR Code !");
                     html5QrCode.stop(); // Stop scanner après succès
                     document.getElementById("reader").innerHTML = "";
-                    document.getElementById('citySelection').style.display = "block";
                     document.getElementById('connectionSection').style.display = "none";
-                // } catch (err) {
-                //     alert("QR Code invalide !");
-                //     console.error(err);
-                // }
+                } catch (err) {
+                    alert("QR Code invalide !");
+                    console.error(err);
+                }
             };
 
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
